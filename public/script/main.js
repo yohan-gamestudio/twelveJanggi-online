@@ -100,8 +100,16 @@ socket.on('chat message', function (msg) {
     turn = res.p1 === socket.id ? PLAYER1 : PLAYER2;
     start = !!res.started;
 
-    $('#name1').text(res.p1_name ? decodeURI(res.p1_name) : '플레이어1');
-    $('#name2').text(res.p2_name ? decodeURI(res.p2_name) : '플레이어2');
+    if (turn === PLAYER2) {
+        $('#name1').text(res.p2_name ? decodeURI(res.p2_name) : '플레이어2');
+        $('#name2').text(res.p1_name ? decodeURI(res.p1_name) : '플레이어1');
+        // 색: 내가(player2) 아래 → 아래 바는 빨간색, 위는 초록색
+        $('#name1').css({'background': 'var(--bg-player2)', 'color': 'var(--player2-accent)', 'border-left': '3px solid var(--player2-accent)', 'border-right': 'none'});
+        $('#name2').css({'background': 'var(--bg-player1)', 'color': 'var(--player1-accent)', 'border-left': 'none', 'border-right': '3px solid var(--player1-accent)'});
+    } else {
+        $('#name1').text(res.p1_name ? decodeURI(res.p1_name) : '플레이어1');
+        $('#name2').text(res.p2_name ? decodeURI(res.p2_name) : '플레이어2');
+    }
 
     updateStatus(res);
     refresh();
@@ -137,12 +145,19 @@ function player2(x) {
     socket.emit('game input', JSON.stringify(new POS(HAVING, x, 0)));
 }
 
+function bottom_piece_click(x) {
+    if (turn === PLAYER1) player1(x);
+    else player2(x);
+}
+
 function button_yx(y, x) {
     if (!start) {
         return;
     }
 
-    socket.emit('game input', JSON.stringify(new POS(BOARD, y, x)));
+    var actual_y = (turn === PLAYER2) ? 3 - y : y;
+    var actual_x = (turn === PLAYER2) ? 2 - x : x;
+    socket.emit('game input', JSON.stringify(new POS(BOARD, actual_y, actual_x)));
 }
 
 function refresh() {
@@ -154,25 +169,26 @@ function refresh() {
     var screen_p1 = $('#player1 > #sbtn > img');
     var screen_p2 = $('#player2 > #sbtn > img');
 
+    var my_pieces = (turn === PLAYER2) ? p2 : p1;
+    var opp_pieces = (turn === PLAYER2) ? p1 : p2;
     for (var i = 0; i < 6; i++) {
-        screen_p1[i].src = 'images/' + mal_str(p1[i]) + '.png';
-        screen_p2[i].src = 'images/' + mal_str(p2[i]) + '.png';
+        screen_p1[i].src = 'images/' + mal_str(my_pieces[i]) + '.png';
+        screen_p2[i].src = 'images/' + mal_str(opp_pieces[i]) + '.png';
     }
 
     for (var y = 0; y < 4; y++) {
         for (var x = 0; x < 3; x++) {
-            screen_bd[y * 3 + x].src = 'images/' + mal_str(bd[y][x]) + '.png';
+            var sy = (turn === PLAYER2) ? 3 - y : y;
+            var sx = (turn === PLAYER2) ? 2 - x : x;
+            screen_bd[y * 3 + x].src = 'images/' + mal_str(bd[sy][sx]) + '.png';
         }
     }
 
-    if (game.turn === PLAYER1) {
-        $('#turn1').css({'background': 'rgba(245,200,66,0.22)', 'color': '#f5c842'});
-        $('#turn2').css({'background': 'rgba(0,0,0,0.18)', 'color': '#5e5a52'});
-    }
-    else {
-        $('#turn1').css({'background': 'rgba(0,0,0,0.18)', 'color': '#5e5a52'});
-        $('#turn2').css({'background': 'rgba(245,200,66,0.22)', 'color': '#f5c842'});
-    }
+    var myTurn = (game.turn === turn);
+    var activeStyle  = {'background': 'rgba(245,200,66,0.22)', 'color': '#f5c842'};
+    var inactiveStyle = {'background': 'rgba(0,0,0,0.18)', 'color': '#5e5a52'};
+    $('#turn1').css(myTurn ? activeStyle : inactiveStyle);
+    $('#turn2').css(myTurn ? inactiveStyle : activeStyle);
 }
 
 function mal_str(mal) {
