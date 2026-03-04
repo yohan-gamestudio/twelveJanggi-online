@@ -280,3 +280,8 @@ button > img {
     display: block;
     margin: auto;
 }
+
+/* ── player2 시점: 보드 이미지 180° 회전 ── */
+#board.flipped > #btn > img {
+    transform: rotate(180deg);
+}

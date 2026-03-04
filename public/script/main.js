@@ -176,6 +176,12 @@ function refresh() {
         screen_p2[i].src = 'images/' + mal_str(opp_pieces[i]) + '.png';
     }
 
+    if (turn === PLAYER2) {
+        $('#board').addClass('flipped');
+    } else {
+        $('#board').removeClass('flipped');
+    }
+
     for (var y = 0; y < 4; y++) {
         for (var x = 0; x < 3; x++) {
             var sy = (turn === PLAYER2) ? 3 - y : y;
