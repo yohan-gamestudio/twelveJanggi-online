@@ -1,55 +1,282 @@
-/* clear */
-* { margin: 0; padding: 0; }
+/* ============================================================
+   십이장기 온라인 — 게임 (style.css)
+   다크 네이비 + 골드 전통 테마
+   float 레이아웃 원본 구조 완전 유지
+   ============================================================ */
+
+:root {
+    --bg-deep:          #0d1117;
+    --bg-surface:       #161b27;
+    --bg-board:         #1a1408;
+    --bg-player1:       #0f1e12;   /* 하단 — 자신 (청록 베이스 다크) */
+    --bg-player2:       #1a0f0f;   /* 상단 — 상대 (버건디 베이스 다크) */
+    --border-subtle:    rgba(255, 215, 100, 0.12);
+    --border-gold:      rgba(255, 200, 60, 0.50);
+    --gold-bright:      #f5c842;
+    --gold-mid:         #c9a227;
+    --gold-dim:         #6b540e;
+    --player1-accent:   #4ade80;   /* 하단 플레이어 — 청록/에메랄드 */
+    --player2-accent:   #f87171;   /* 상단 플레이어 — 로즈/레드 */
+    --turn-active-bg:   rgba(245, 200, 66, 0.18);
+    --text-primary:     #eae6d8;
+    --text-secondary:   #9a9282;
+    --shadow-wrap:      0 8px 48px rgba(0,0,0,0.70);
+}
+
+/* ── 리셋 ── */
+* { margin: 0; padding: 0; box-sizing: border-box; }
 .clearfix::before,
 .clearfix::after { display: block; content: ''; clear: both; }
 
-body {
+html, body {
+    min-height: 100vh;
+    background-color: var(--bg-deep);
+    background-image:
+        radial-gradient(ellipse 70% 50% at 50% -5%, rgba(197,162,39,0.09) 0%, transparent 65%),
+        radial-gradient(ellipse 35% 35% at 5% 105%, rgba(74,222,128,0.04) 0%, transparent 55%),
+        radial-gradient(ellipse 35% 35% at 95% 105%, rgba(248,113,113,0.04) 0%, transparent 55%);
+    font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
     padding: 16px 0 24px;
 }
 
+/* ──────────────────────────────
+   상단 바
+────────────────────────────── */
 .top-bar {
     width: 400px;
     max-width: calc(100% - 20px);
-    margin: 0 auto 10px;
+    margin: 0 auto 12px;
     display: flex;
     align-items: center;
     gap: 10px;
+    padding: 10px 16px;
+    background: rgba(22, 27, 39, 0.90);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 2px 16px rgba(0,0,0,0.40);
 }
 
 #room-info {
     font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    color: var(--gold-mid);
 }
 
 #ready-btn {
-    padding: 8px 14px;
+    padding: 7px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    letter-spacing: 0.08em;
     cursor: pointer;
+    background: linear-gradient(135deg, var(--gold-dim) 0%, var(--gold-mid) 100%);
+    color: #1a1200;
+    border: none;
+    border-radius: 8px;
+    transition: background 0.15s, transform 0.10s, box-shadow 0.15s;
+    box-shadow: 0 2px 8px rgba(197,162,39,0.25);
 }
+
+#ready-btn:hover {
+    background: linear-gradient(135deg, var(--gold-mid) 0%, var(--gold-bright) 100%);
+    box-shadow: 0 3px 14px rgba(197,162,39,0.40);
+    transform: translateY(-1px);
+}
+
+#ready-btn:active { transform: translateY(0); }
 
 #status-text {
     margin-left: auto;
-    color: #333;
-    font-size: 14px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    letter-spacing: 0.04em;
 }
 
+/* ──────────────────────────────
+   메인 랩퍼
+────────────────────────────── */
 #wrap {
     width: 400px;
     max-width: calc(100% - 20px);
-    background: #fff;
+    background: var(--bg-surface);
     margin: 0 auto;
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow-wrap);
 }
 
-/* side */
-#side { float: left; width: 100%; text-align: center; }
-#side > .name { float: left; width: 50%; height: 50px; background: #fff; font-size: 20px; }
-#side > #name1 { background-color: greenyellow; }
-#side > #name2 { background-color: pink; }
-#side > .turn { float: left; width: 50%; height: 50px; background: #fff; font-size: 20px; }
-#side > .time { float: left; width: 24%; height: 100px; background: #fff; font-size: 20px; display: none; }
-#side > .having { display: inline-block; width: 100%; background: #fff; font-size: 20px; }
-#side > .having > #sbtn { float: left; width: 16.66%; height: 50%; }
+/* ──────────────────────────────
+   사이드 (플레이어 영역)
+   원본 float 구조 완전 유지
+────────────────────────────── */
+#side {
+    float: left;
+    width: 100%;
+    text-align: center;
+}
 
-#contents { float: left; width: 100%; background: #fff; }
-#contents > #board { width: 400px; height: 533px; }
-#contents > #board > #btn { float: left; width: 33.33%; height: 25%; }
+/* ── 플레이어 이름 ── */
+#side > .name {
+    float: left;
+    width: 50%;
+    height: 50px;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-subtle);
+}
 
-button > img { max-width: 90%; max-height: 90%; }
+/* 하단 — 자신 (name1) */
+#side > #name1 {
+    background: var(--bg-player1);
+    color: var(--player1-accent);
+    border-left: 3px solid var(--player1-accent);
+    text-shadow: 0 0 16px rgba(74,222,128,0.35);
+}
+
+/* 상단 — 상대 (name2) */
+#side > #name2 {
+    background: var(--bg-player2);
+    color: var(--player2-accent);
+    border-right: 3px solid var(--player2-accent);
+    text-shadow: 0 0 16px rgba(248,113,113,0.35);
+}
+
+/* ── 턴 표시 ── */
+#side > .turn {
+    float: left;
+    width: 50%;
+    height: 50px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.25);
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background 0.30s, color 0.30s, text-shadow 0.30s;
+}
+
+/* ── 타이머 (display:none 유지) ── */
+#side > .time {
+    float: left;
+    width: 24%;
+    height: 100px;
+    font-size: 20px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.30);
+    color: var(--text-primary);
+}
+
+/* ── having (패 들고 있는 영역) ── */
+#side > .having {
+    display: block;
+    width: 100%;
+    height: 66px;
+    background: rgba(0,0,0,0.20);
+    font-size: 20px;
+    border-bottom: 1px solid var(--border-subtle);
+    overflow: hidden;
+}
+
+#side > .having > #sbtn {
+    float: left;
+    width: 16.66%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--border-subtle);
+    cursor: pointer;
+    padding: 4px;
+    transition: background 0.12s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#side > .having > #sbtn:last-child {
+    border-right: none;
+}
+
+#side > .having > #sbtn:hover {
+    background: rgba(197,162,39,0.10);
+}
+
+#side > .having > #sbtn:active {
+    background: rgba(197,162,39,0.20);
+}
+
+/* ──────────────────────────────
+   게임 보드
+   원본 float/크기 완전 유지
+────────────────────────────── */
+#contents {
+    float: left;
+    width: 100%;
+    background: var(--bg-board);
+    background-image:
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent calc(25% - 1px),
+            rgba(197,162,39,0.07) calc(25% - 1px),
+            rgba(197,162,39,0.07) 25%
+        ),
+        repeating-linear-gradient(
+            90deg,
+            transparent,
+            transparent calc(33.33% - 1px),
+            rgba(197,162,39,0.07) calc(33.33% - 1px),
+            rgba(197,162,39,0.07) 33.33%
+        );
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+#contents > #board {
+    width: 400px;
+    height: 533px;
+}
+
+/* ── 보드 셀 버튼 ── */
+#contents > #board > #btn {
+    float: left;
+    width: 33.33%;
+    height: 25%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.10s;
+    position: relative;
+}
+
+#contents > #board > #btn:hover {
+    background: rgba(197,162,39,0.09);
+}
+
+#contents > #board > #btn:active {
+    background: rgba(197,162,39,0.18);
+}
+
+/* ── 버튼 안 이미지 ── */
+button > img {
+    max-width: 90%;
+    max-height: 90%;
+    display: block;
+    margin: auto;
+}

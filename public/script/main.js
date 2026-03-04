@@ -166,12 +166,12 @@ function refresh() {
     }
 
     if (game.turn === PLAYER1) {
-        $('#turn1').css('background', 'yellow');
-        $('#turn2').css('background', 'white');
+        $('#turn1').css({'background': 'rgba(245,200,66,0.22)', 'color': '#f5c842'});
+        $('#turn2').css({'background': 'rgba(0,0,0,0.18)', 'color': '#5e5a52'});
     }
     else {
-        $('#turn1').css('background', 'white');
-        $('#turn2').css('background', 'yellow');
+        $('#turn1').css({'background': 'rgba(0,0,0,0.18)', 'color': '#5e5a52'});
+        $('#turn2').css({'background': 'rgba(245,200,66,0.22)', 'color': '#f5c842'});
     }
 }
 
