@@ -11,45 +11,52 @@
     <script src="script/main.js"></script>
 </head>
 <body>
+    <div class="top-bar">
+        <div id="room-info">방 번호: -</div>
+        <button type="button" id="ready-btn">레디</button>
+        <div id="status-text">상대를 기다리는 중...</div>
+    </div>
+
     <div id="wrap" class="clearfix">
         <div id="side">
-            <h1 class="name" id="name2">플레이어1</h1>
+            <h1 class="name" id="name2">플레이어2</h1>
             <div class="turn" id="turn2"></div>
             <div class="time" id="time2">10:10</div>
             <div id="player2" class="having">
-                <button id="sbtn" onclick=player2(0)><img src="images/빨장무.png" alt=""></button>
-                <button id="sbtn" onclick=player2(1)><img src="images/빨장무.png" alt=""></button>
-                <button id="sbtn" onclick=player2(2)><img src="images/빨장무.png" alt=""></button>
-                <button id="sbtn" onclick=player2(3)><img src="images/빨장무.png" alt=""></button>
-                <button id="sbtn" onclick=player2(4)><img src="images/빨장무.png" alt=""></button>
-                <button id="sbtn" onclick=player2(5)><img src="images/빨장무.png" alt=""></button>
+                <button id="sbtn" onclick="player2(0)"><img src="images/빨장무.png" alt=""></button>
+                <button id="sbtn" onclick="player2(1)"><img src="images/빨장무.png" alt=""></button>
+                <button id="sbtn" onclick="player2(2)"><img src="images/빨장무.png" alt=""></button>
+                <button id="sbtn" onclick="player2(3)"><img src="images/빨장무.png" alt=""></button>
+                <button id="sbtn" onclick="player2(4)"><img src="images/빨장무.png" alt=""></button>
+                <button id="sbtn" onclick="player2(5)"><img src="images/빨장무.png" alt=""></button>
             </div>
         </div>
-        <!-- //left side -->
+
         <center id="contents" name="game">
             <div id="board">
-                <button id="btn" onclick=button_yx(0,0)><img src="images/빨장무.png" alt=""></button>
-                <button id="btn" onclick=button_yx(0,1)><img src="images/빨왕무.png" alt=""></button>
-                <button id="btn" onclick=button_yx(0,2)><img src="images/빨상무.png" alt=""></button>
-                <button id="btn" onclick=button_yx(1,0)><img src="images/빈칸.png" alt=""></button>
-                <button id="btn" onclick=button_yx(1,1)><img src="images/빨자무.png" alt=""></button>
-                <button id="btn" onclick=button_yx(1,2)><img src="images/빈칸.png" alt=""></button>
-                <button id="btn" onclick=button_yx(2,0)><img src="images/빈칸.png" alt=""></button>
-                <button id="btn" onclick=button_yx(2,1)><img src="images/초자무.png" alt=""></button>
-                <button id="btn" onclick=button_yx(2,2)><img src="images/빈칸.png" alt=""></button>
-                <button id="btn" onclick=button_yx(3,0)><img src="images/초상무.png" alt=""></button>
-                <button id="btn" onclick=button_yx(3,1)><img src="images/초왕무.png" alt=""></button>
-                <button id="btn" onclick=button_yx(3,2)><img src="images/초장무.png" alt=""></button>
+                <button id="btn" onclick="button_yx(0,0)"><img src="images/빨장무.png" alt=""></button>
+                <button id="btn" onclick="button_yx(0,1)"><img src="images/빨왕무.png" alt=""></button>
+                <button id="btn" onclick="button_yx(0,2)"><img src="images/빨상무.png" alt=""></button>
+                <button id="btn" onclick="button_yx(1,0)"><img src="images/빈칸.png" alt=""></button>
+                <button id="btn" onclick="button_yx(1,1)"><img src="images/빨자무.png" alt=""></button>
+                <button id="btn" onclick="button_yx(1,2)"><img src="images/빈칸.png" alt=""></button>
+                <button id="btn" onclick="button_yx(2,0)"><img src="images/빈칸.png" alt=""></button>
+                <button id="btn" onclick="button_yx(2,1)"><img src="images/초자무.png" alt=""></button>
+                <button id="btn" onclick="button_yx(2,2)"><img src="images/빈칸.png" alt=""></button>
+                <button id="btn" onclick="button_yx(3,0)"><img src="images/초상무.png" alt=""></button>
+                <button id="btn" onclick="button_yx(3,1)"><img src="images/초왕무.png" alt=""></button>
+                <button id="btn" onclick="button_yx(3,2)"><img src="images/초장무.png" alt=""></button>
             </div>
         </center>
+
         <div id="side">
             <div id="player1" class="having">
-                <button id="sbtn" onclick=player1(0)><img src="images/빨장무.png" alt=""></button>
-                <button id="sbtn" onclick=player1(1)><img src="images/빨장무.png" alt=""></button>
-                <button id="sbtn" onclick=player1(2)><img src="images/빨장무.png" alt=""></button>
-                <button id="sbtn" onclick=player1(3)><img src="images/빨장무.png" alt=""></button>
-                <button id="sbtn" onclick=player1(4)><img src="images/빨장무.png" alt=""></button>
-                <button id="sbtn" onclick=player1(5)><img src="images/빨장무.png" alt=""></button>
+                <button id="sbtn" onclick="player1(0)"><img src="images/빨장무.png" alt=""></button>
+                <button id="sbtn" onclick="player1(1)"><img src="images/빨장무.png" alt=""></button>
+                <button id="sbtn" onclick="player1(2)"><img src="images/빨장무.png" alt=""></button>
+                <button id="sbtn" onclick="player1(3)"><img src="images/빨장무.png" alt=""></button>
+                <button id="sbtn" onclick="player1(4)"><img src="images/빨장무.png" alt=""></button>
+                <button id="sbtn" onclick="player1(5)"><img src="images/빨장무.png" alt=""></button>
             </div>
             <h1 class="name" id="name1">플레이어1</h1>
             <div class="turn" id="turn1"></div>

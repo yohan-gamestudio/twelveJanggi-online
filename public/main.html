@@ -1,52 +1,140 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>십이장기 온라인</title>
     <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
-    <center><h1>십이장기</h1></center>
-    <!-- 
-    <form action="">
-        <p>이름</p><input id="name" type="text">
-        <p>방번호</p><input id="val" type="text">
-        <button>점속</button>
-    </form>
-    -->
+    <h1>십이장기</h1>
+
     <div class="main">
-      <form action="login_check.php" method="post">
         <fieldset>
-            <legend><h2>로그인</h2></legend>
-            <input type="text" id="name" placeholder="이름"/>
-            <br/>
-            <input type="text" id="val" placeholder="방번호"/>
-            <br/>
-            <button>접속</button>
+            <legend><h2>로비</h2></legend>
+
+            <input type="text" id="name" placeholder="이름" autocomplete="off" />
+            <button type="button" id="create-room-btn">랜덤 방 생성</button>
+
+            <p class="hint">또는 아래 방 목록에서 입장할 수 있습니다.</p>
+
+            <div class="room-header">
+                <h3>입장 가능한 방</h3>
+                <button type="button" id="refresh-room-btn">새로고침</button>
+            </div>
+
+            <ul id="room-list" class="room-list"></ul>
+            <p id="empty-room" class="empty-room">현재 입장 가능한 방이 없습니다.</p>
         </fieldset>
-      </form>
     </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script>
         $(function () {
-          //const url = "http://192.168.0.2:3000";
-          var socket = io();
-          $('form').submit(function(e){
-            e.preventDefault(); // prevents page reloading
-            var data = {
-              name : $('#name').val(),
-              val : $('#val').val()
+            var socket = io();
+
+            function getName() {
+                return $('#name').val().trim();
             }
-            socket.emit('chat message', JSON.stringify(data));
-            return false;
-          });
-          socket.on('chat message', function(msg){
-            console.log(msg);
-            if(msg == 'no') alert("방을 들어갈 수 없습니다");
-            else window.location.href = "/game.html?name=" + $('#name').val() + "&val=" + $('#val').val();
-          });
+
+            function moveToRoom(roomId) {
+                var name = getName();
+                window.location.href = '/game.html?name=' + encodeURIComponent(name) + '&val=' + roomId;
+            }
+
+            function renderRoomList(rawList) {
+                var list = Array.isArray(rawList) ? rawList : [];
+                var roomList = $('#room-list');
+
+                roomList.empty();
+
+                if (!list.length) {
+                    $('#empty-room').show();
+                    return;
+                }
+
+                $('#empty-room').hide();
+
+                list.forEach(function (r) {
+                    var hostName = r.p1_name || r.p2_name || '알 수 없음';
+
+                    var item = $('<li class="room-item"></li>');
+                    var info = $('<div class="room-info"></div>');
+                    var title = $('<div class="room-title"></div>').text('방 #' + r.val);
+                    var host = $('<div class="room-host"></div>').text('대기중: ' + hostName);
+                    var joinButton = $('<button type="button" class="join-btn">입장</button>');
+
+                    joinButton.attr('data-room', r.val);
+
+                    info.append(title);
+                    info.append(host);
+                    item.append(info);
+                    item.append(joinButton);
+                    roomList.append(item);
+                });
+            }
+
+            $('#create-room-btn').on('click', function () {
+                var name = getName();
+
+                if (!name) {
+                    alert('이름을 입력해주세요.');
+                    return;
+                }
+
+                socket.emit('request random room', JSON.stringify({
+                    name: name
+                }));
+            });
+
+            $('#refresh-room-btn').on('click', function () {
+                socket.emit('request room list');
+            });
+
+            $('#room-list').on('click', '.join-btn', function () {
+                var name = getName();
+
+                if (!name) {
+                    alert('이름을 입력해주세요.');
+                    return;
+                }
+
+                var roomId = $(this).attr('data-room');
+                moveToRoom(roomId);
+            });
+
+            socket.on('room create result', function (msg) {
+                var res;
+
+                try {
+                    res = JSON.parse(msg);
+                } catch (e) {
+                    alert('방 생성 응답을 처리할 수 없습니다.');
+                    return;
+                }
+
+                if (!res.ok) {
+                    alert(res.error || '방 생성에 실패했습니다.');
+                    return;
+                }
+
+                moveToRoom(res.val);
+            });
+
+            socket.on('room list', function (msg) {
+                var list = [];
+
+                try {
+                    list = JSON.parse(msg) || [];
+                } catch (e) {
+                    list = [];
+                }
+
+                renderRoomList(list);
+            });
+
+            socket.emit('request room list');
         });
     </script>
 </body>

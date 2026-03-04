@@ -1,21 +1,21 @@
-const NOTHING = 0;
-const PLAYER1 = 1;
-const PLAYER2 = 2;
+var NOTHING = 0;
+var PLAYER1 = 1;
+var PLAYER2 = 2;
 
-const BOARD = 0;
-const HAVING = 1;
+var BOARD = 0;
+var HAVING = 1;
 
-const Wang = 0;
-const Sang = 1;
-const Jang = 2;
-const Ja = 3;
-const Hu = 4;
-const Mu = 5;
+var Wang = 0;
+var Sang = 1;
+var Jang = 2;
+var Ja = 3;
+var Hu = 4;
+var Mu = 5;
 
-const SELECTED = 1;
-const MOVED = 2;
+var SELECTED = 1;
+var MOVED = 2;
 
-const MAL_DIR = [
+var MAL_DIR = [
     [[1, -1], [1, 0], [1, 1], [0, -1], [0, 1], [-1, 1], [-1, 0], [-1, -1]],
     [[1, 1], [1, -1], [-1, 1], [-1, -1]],
     [[1, 0], [-1, 0], [0, 1], [0, -1]],

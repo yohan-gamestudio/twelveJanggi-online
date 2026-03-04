@@ -1,27 +1,55 @@
 /* clear */
-* { margin: 0; padding: 0;}
-.clearfix::before, .clearfix::after {display: block; content:''; clear:both;}
+* { margin: 0; padding: 0; }
+.clearfix::before,
+.clearfix::after { display: block; content: ''; clear: both; }
 
-#wrap {width: 100%; background: #fff; margin: 0 auto;}
-#wrap {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    margin-right: -50%;
-    transform: translate(-50%, -50%);
+body {
+    padding: 16px 0 24px;
 }
+
+.top-bar {
+    width: 400px;
+    max-width: calc(100% - 20px);
+    margin: 0 auto 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#room-info {
+    font-weight: 700;
+}
+
+#ready-btn {
+    padding: 8px 14px;
+    cursor: pointer;
+}
+
+#status-text {
+    margin-left: auto;
+    color: #333;
+    font-size: 14px;
+}
+
+#wrap {
+    width: 400px;
+    max-width: calc(100% - 20px);
+    background: #fff;
+    margin: 0 auto;
+}
+
 /* side */
-#side {float: left; width: 100%; text-align: center; }
-#side > .name {float: left; width: 50%; height: 50px; background: #fff; font-size:20px;}
-#side > #name1 {background-color: greenyellow;}
-#side > #name2 {background-color: pink;}
-#side > .turn {float: left; width: 50%; height: 50px; background: #fff; font-size:20px;}
-#side > .time {float: left; width: 24%; height: 100px; background: #fff; font-size:20px; display: none;}
-#side > .having {display: inline-block; width: 100%;  background: #fff; font-size:20px;}
-#side > .having > #sbtn {float: left; width: 16.66%; height: 50%;}
+#side { float: left; width: 100%; text-align: center; }
+#side > .name { float: left; width: 50%; height: 50px; background: #fff; font-size: 20px; }
+#side > #name1 { background-color: greenyellow; }
+#side > #name2 { background-color: pink; }
+#side > .turn { float: left; width: 50%; height: 50px; background: #fff; font-size: 20px; }
+#side > .time { float: left; width: 24%; height: 100px; background: #fff; font-size: 20px; display: none; }
+#side > .having { display: inline-block; width: 100%; background: #fff; font-size: 20px; }
+#side > .having > #sbtn { float: left; width: 16.66%; height: 50%; }
 
-#contents {float: left; width: 100%; background: #fff;}
-#contents > #board {width: 400px; height: 533px;}
-#contents > #board > #btn {float: left; width: 33.33%; height: 25%;}
+#contents { float: left; width: 100%; background: #fff; }
+#contents > #board { width: 400px; height: 533px; }
+#contents > #board > #btn { float: left; width: 33.33%; height: 25%; }
 
-button > img {max-width : 90%; max-height : 90%; }
+button > img { max-width: 90%; max-height: 90%; }

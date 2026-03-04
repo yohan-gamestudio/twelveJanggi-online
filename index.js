@@ -1,167 +1,376 @@
-const { data } = require('jquery');
-
 var express = require('express');
-var app = require('express')();
+var app = express();
 var http = require('http').createServer(app);
 var io = require('socket.io')(http);
-//include 
 var fs = require('fs');
-const { Console } = require('console');
+
 var text = fs.readFileSync('./public/script/new.js') + '';
 eval(text);
 
-// path control
 app.use(express.static('public'));
 
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/main.html');
+app.get('/', function (req, res) {
+    res.sendFile(__dirname + '/public/main.html');
 });
 
-app.get('/game.html', (req, res) => {
+app.get('/game.html', function (req, res) {
     res.sendFile(__dirname + '/public/game.html');
 });
 
+const ROOM_COUNT = 3000;
 
-//util
-function getUrlParams(url) {
-    var params = {};
-    url.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(str, key, value) { params[key] = value; });
-    return params;
+var room = Array(ROOM_COUNT);
+var player = {};
+
+for (var i = 0; i < ROOM_COUNT; i++) {
+    room[i] = createRoom();
 }
 
-
-
-//for game communication
-io.on('connection', (socket) => {
-    //user_come
-    console.log(socket.id + 'user connected');
-
-    //user try to enter game
-    socket.on('chat message', (msg) => {
-        let data = JSON.parse(msg);
-        if(data.name != "" && 0 <= data.val && data.val < 3000) { 
-
-            socket.emit('chat message', "ok");
-            
-        }
-        else socket.emit('chat message', "no");
-        console.log(msg);
-    });
-
-    //game input
-    socket.on('game input', (msg) => {
-        let data = JSON.parse(msg);
-        console.log(data);
-        let r = room[player[socket.id][0]];
-        let game = r.game;
-        if(game.button_click(player[socket.id][1], data) == MOVED) {
-            if(game.turn == 1) game.set_turn(2);
-            else game.set_turn(1);
-        }
-
-        io.to(r.p1).emit('chat message', JSON.stringify(r));
-        io.to(r.p2).emit('chat message', JSON.stringify(r));
-
-        if(game.state == PLAYER1) {
-            io.to(r.p1).emit('chat message', 'p1');
-            io.to(r.p2).emit('chat message', 'p1');
-
-            game.init_game();
-        }
-        else if(game.state == PLAYER2) {
-            io.to(r.p1).emit('chat message', 'p2');
-            io.to(r.p2).emit('chat message', 'p2');
-
-            game.init_game();
-        }
-    });
-    
-    socket.on('player in', (msg) => {
-        let data = getUrlParams(msg);
-        let name = data.name, val = data.val;
-        let turn = 0;
-        console.log(data);
-        if(room[val].p1 == null) {
-            room[val].p1 = socket.id;
-            room[val].p1_name = name;
-            turn = 1;
-        }
-        else if(room[val].p2 == null) {
-            room[val].p2 = socket.id;
-            room[val].p2_name = name;
-            turn = 2;
-        }
-        player[socket.id] = [val, turn];
-        room[val].game = new GAME();
-
-        let r = room[val];
-        
-        if(r.p1 && r.p2 && Math.floor(Math.random() * 2) % 2 == 0) {
-            [r.p1, r.p2] = [r.p2, r.p1];
-            [r.p1_name, r.p2_name] = [r.p2_name, r.p1_name];
-            [player[r.p1][1], player[r.p2][1]] = [player[r.p2][1], player[r.p1][1]];
-        }
-
-
-        if(r.p1) io.to(r.p1).emit('chat message', JSON.stringify(r));
-        if(r.p2) io.to(r.p2).emit('chat message', JSON.stringify(r));
-    });
-
-    //user out
-    socket.on('disconnect', () => {
-        console.log(socket.id + 'user disconnected');
-        let r;
-
-        if(player[socket.id]) {
-            r = room[player[socket.id][0]];
-            if(r.p1 == socket.id) r.p1 = r.p1_name = null;
-            else if(r.p2 == socket.id) r.p2 = r.p2_name = null;
-        }
-        
-        player[socket.id] = null;
-
-        if(r && r.p1) io.to(r.p1).emit('chat message', JSON.stringify(r));
-        if(r && r.p2) io.to(r.p2).emit('chat message', JSON.stringify(r)); 
-    });
-});
-
-http.listen(9200, () => {
-  console.log('Server start on 9200');
-});
-
-//game
-
-function ROOM () {
-    var p1 = null;
-    var p2 = null;
-    var game = null;
+function createRoom() {
+    return {
+        p1: null,
+        p2: null,
+        p1_name: null,
+        p2_name: null,
+        p1_ready: false,
+        p2_ready: false,
+        started: false,
+        game: new GAME()
+    };
 }
-var room = Array(3000);
-var player = {}
 
-for(var i = 0; i < 3000; i++) {
-    room[i] = {
-        p1 : null,
-        p2 : null,
-        p1_name : null,
-        p2_name : null,
-        game : new GAME()
+function resetRoomGame(r) {
+    r.started = false;
+    r.p1_ready = false;
+    r.p2_ready = false;
+    r.game = new GAME();
+}
+
+function normalizeRoomSlots(r) {
+    if (!r.p1 && r.p2) {
+        r.p1 = r.p2;
+        r.p1_name = r.p2_name;
+        r.p1_ready = r.p2_ready;
+        if (player[r.p1]) {
+            player[r.p1][1] = 1;
+        }
+
+        r.p2 = null;
+        r.p2_name = null;
+        r.p2_ready = false;
     }
 }
 
-const NOTHING = 0;
-const PLAYER1 = 1;
-const PLAYER2 = 2;
+function getUrlParams(url) {
+    var params = {};
+    url.replace(/[?&]+([^=&]+)=([^&]*)/gi, function (str, key, value) {
+        params[key] = decodeURIComponent(value || '');
+    });
+    return params;
+}
 
-const BOARD = 0;
-const HAVING = 1;
+function parseJSON(msg) {
+    if (typeof msg === 'string') {
+        try {
+            return JSON.parse(msg);
+        }
+        catch (e) {
+            return null;
+        }
+    }
 
-const Wang = 0;
-const Sang = 1;
-const Jang = 2;
-const Ja = 3;
-const Hu = 4;
-const Mu = 5;
+    if (msg && typeof msg === 'object') {
+        return msg;
+    }
 
-const SELECTED = 1;
-const MOVED = 2;
+    return null;
+}
+
+function parseRoomNumber(value) {
+    var num = Number(value);
+    if (!Number.isInteger(num)) {
+        return null;
+    }
+    return num;
+}
+
+function getRandomEmptyRoomId() {
+    var start = Math.floor(Math.random() * ROOM_COUNT);
+
+    for (var i = 0; i < ROOM_COUNT; i++) {
+        var idx = (start + i) % ROOM_COUNT;
+        var r = room[idx];
+        if (!r.p1 && !r.p2 && !r.started) {
+            return idx;
+        }
+    }
+
+    return null;
+}
+
+function getJoinableRoomList() {
+    var list = [];
+
+    for (var i = 0; i < ROOM_COUNT; i++) {
+        var r = room[i];
+        var count = (r.p1 ? 1 : 0) + (r.p2 ? 1 : 0);
+
+        if (!r.started && count === 1) {
+            list.push({
+                val: i,
+                p1_name: r.p1_name,
+                p2_name: r.p2_name,
+                count: count
+            });
+        }
+    }
+
+    return list;
+}
+
+function emitRoomState(r) {
+    var payload = JSON.stringify({
+        p1: r.p1,
+        p2: r.p2,
+        p1_name: r.p1_name,
+        p2_name: r.p2_name,
+        p1_ready: r.p1_ready,
+        p2_ready: r.p2_ready,
+        started: r.started,
+        game: r.game
+    });
+
+    if (r.p1) {
+        io.to(r.p1).emit('chat message', payload);
+    }
+
+    if (r.p2) {
+        io.to(r.p2).emit('chat message', payload);
+    }
+}
+
+function broadcastRoomList() {
+    io.emit('room list', JSON.stringify(getJoinableRoomList()));
+}
+
+io.on('connection', function (socket) {
+    console.log(socket.id + ' user connected');
+    socket.emit('room list', JSON.stringify(getJoinableRoomList()));
+
+    socket.on('request random room', function (msg) {
+        var data = parseJSON(msg);
+        var name = data && typeof data.name === 'string' ? data.name.trim() : '';
+
+        if (!name) {
+            socket.emit('room create result', JSON.stringify({
+                ok: false,
+                error: '이름을 입력해주세요.'
+            }));
+            return;
+        }
+
+        var roomId = getRandomEmptyRoomId();
+
+        if (roomId === null) {
+            socket.emit('room create result', JSON.stringify({
+                ok: false,
+                error: '생성 가능한 방이 없습니다.'
+            }));
+            return;
+        }
+
+        socket.emit('room create result', JSON.stringify({
+            ok: true,
+            val: roomId
+        }));
+    });
+
+    socket.on('request room list', function () {
+        socket.emit('room list', JSON.stringify(getJoinableRoomList()));
+    });
+
+    socket.on('player in', function (msg) {
+        var data = getUrlParams(msg);
+        var name = typeof data.name === 'string' ? data.name.trim() : '';
+        var val = parseRoomNumber(data.val);
+
+        if (!name || val === null || val < 0 || val >= ROOM_COUNT) {
+            socket.emit('chat message', 'no');
+            return;
+        }
+
+        if (player[socket.id]) {
+            var joinedRoom = room[player[socket.id][0]];
+            if (joinedRoom) {
+                emitRoomState(joinedRoom);
+            }
+            return;
+        }
+
+        var r = room[val];
+
+        if (r.started || (r.p1 && r.p2)) {
+            socket.emit('chat message', 'no');
+            return;
+        }
+
+        var turn = 0;
+
+        if (!r.p1) {
+            r.p1 = socket.id;
+            r.p1_name = name;
+            r.p1_ready = false;
+            turn = 1;
+        }
+        else if (!r.p2) {
+            r.p2 = socket.id;
+            r.p2_name = name;
+            r.p2_ready = false;
+            turn = 2;
+        }
+
+        if (!turn) {
+            socket.emit('chat message', 'no');
+            return;
+        }
+
+        player[socket.id] = [val, turn];
+
+        if (r.p1 && r.p2) {
+            resetRoomGame(r);
+
+            if (Math.floor(Math.random() * 2) % 2 == 0) {
+                var tempP = r.p1;
+                var tempName = r.p1_name;
+
+                r.p1 = r.p2;
+                r.p1_name = r.p2_name;
+                r.p2 = tempP;
+                r.p2_name = tempName;
+
+                if (player[r.p1]) {
+                    player[r.p1][1] = 1;
+                }
+                if (player[r.p2]) {
+                    player[r.p2][1] = 2;
+                }
+            }
+        }
+
+        emitRoomState(r);
+        broadcastRoomList();
+    });
+
+    socket.on('player ready', function () {
+        if (!player[socket.id]) {
+            return;
+        }
+
+        var val = player[socket.id][0];
+        var turn = player[socket.id][1];
+        var r = room[val];
+
+        if (!r || !r.p1 || !r.p2 || r.started) {
+            return;
+        }
+
+        if (turn == 1 && r.p1 == socket.id) {
+            r.p1_ready = true;
+        }
+        else if (turn == 2 && r.p2 == socket.id) {
+            r.p2_ready = true;
+        }
+
+        if (r.p1_ready && r.p2_ready) {
+            r.started = true;
+            r.game = new GAME();
+        }
+
+        emitRoomState(r);
+        broadcastRoomList();
+    });
+
+    socket.on('game input', function (msg) {
+        var data = parseJSON(msg);
+
+        if (!data || !player[socket.id]) {
+            return;
+        }
+
+        var val = player[socket.id][0];
+        var turn = player[socket.id][1];
+        var r = room[val];
+
+        if (!r || !r.started) {
+            return;
+        }
+
+        var game = r.game;
+
+        if (game.button_click(turn, data) == MOVED) {
+            if (game.turn == 1) {
+                game.set_turn(2);
+            }
+            else {
+                game.set_turn(1);
+            }
+        }
+
+        emitRoomState(r);
+
+        if (game.state == PLAYER1) {
+            io.to(r.p1).emit('chat message', 'p1');
+            io.to(r.p2).emit('chat message', 'p1');
+
+            resetRoomGame(r);
+            emitRoomState(r);
+            broadcastRoomList();
+        }
+        else if (game.state == PLAYER2) {
+            io.to(r.p1).emit('chat message', 'p2');
+            io.to(r.p2).emit('chat message', 'p2');
+
+            resetRoomGame(r);
+            emitRoomState(r);
+            broadcastRoomList();
+        }
+    });
+
+    socket.on('disconnect', function () {
+        console.log(socket.id + ' user disconnected');
+
+        if (!player[socket.id]) {
+            return;
+        }
+
+        var val = player[socket.id][0];
+        var r = room[val];
+
+        delete player[socket.id];
+
+        if (!r) {
+            return;
+        }
+
+        if (r.p1 == socket.id) {
+            r.p1 = null;
+            r.p1_name = null;
+            r.p1_ready = false;
+        }
+        else if (r.p2 == socket.id) {
+            r.p2 = null;
+            r.p2_name = null;
+            r.p2_ready = false;
+        }
+
+        resetRoomGame(r);
+        normalizeRoomSlots(r);
+
+        emitRoomState(r);
+        broadcastRoomList();
+    });
+});
+
+http.listen(9200, function () {
+    console.log('Server start on 9200');
+});
