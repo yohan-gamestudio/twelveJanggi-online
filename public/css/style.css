@@ -285,3 +285,9 @@ button > img {
 #board.flipped > #btn > img {
     transform: rotate(180deg);
 }
+
+/* ── player2 시점: 양쪽 잡은 말 이미지도 180° 회전 ── */
+#wrap.hands-flipped #player1 > #sbtn > img,
+#wrap.hands-flipped #player2 > #sbtn > img {
+    transform: rotate(180deg);
+}

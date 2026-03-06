@@ -6,6 +6,78 @@ var roomId = null;
 var socket = io();
 socket.emit('player in', window.location.href);
 
+var IMAGE_PATH_PREFIX = 'images/';
+var PRELOAD_IMAGE_NAMES = [
+    '빈칸', '빈칸선',
+    '빨빈무', '빨빈선', '빨상무', '빨상선', '빨왕무', '빨왕선', '빨자무', '빨자선', '빨장무', '빨장선', '빨후무', '빨후선',
+    '초빈무', '초빈선', '초상무', '초상선', '초왕무', '초왕선', '초자무', '초자선', '초장무', '초장선', '초후무', '초후선'
+];
+
+var renderNodes = null;
+var renderState = {
+    myPieces: new Array(6),
+    oppPieces: new Array(6),
+    board: new Array(12),
+    boardFlipped: null,
+    myTurn: null
+};
+var renderScheduled = false;
+var raf = window.requestAnimationFrame || function (callback) {
+    return setTimeout(callback, 16);
+};
+
+function toImagePath(name) {
+    return IMAGE_PATH_PREFIX + name + '.png';
+}
+
+function ensureRenderNodes() {
+    if (renderNodes && renderNodes.board.length === 12 && renderNodes.my.length === 6 && renderNodes.opp.length === 6) {
+        return true;
+    }
+
+    var next = {
+        board: document.querySelectorAll('#board > #btn > img'),
+        my: document.querySelectorAll('#player1 > #sbtn > img'),
+        opp: document.querySelectorAll('#player2 > #sbtn > img')
+    };
+
+    if (next.board.length !== 12 || next.my.length !== 6 || next.opp.length !== 6) {
+        return false;
+    }
+
+    renderNodes = next;
+    return true;
+}
+
+function preloadPieceImages() {
+    for (var i = 0; i < PRELOAD_IMAGE_NAMES.length; i++) {
+        var image = new Image();
+        image.src = toImagePath(PRELOAD_IMAGE_NAMES[i]);
+    }
+}
+
+function setImageIfChanged(imageNode, cache, index, nextImageName) {
+    if (!imageNode || cache[index] === nextImageName) {
+        return;
+    }
+
+    cache[index] = nextImageName;
+    imageNode.src = toImagePath(nextImageName);
+}
+
+function applyTurnStyles(myTurn) {
+    if (renderState.myTurn === myTurn) {
+        return;
+    }
+
+    renderState.myTurn = myTurn;
+
+    var activeStyle = {'background': 'rgba(245,200,66,0.22)', 'color': '#f5c842'};
+    var inactiveStyle = {'background': 'rgba(0,0,0,0.18)', 'color': '#5e5a52'};
+    $('#turn1').css(myTurn ? activeStyle : inactiveStyle);
+    $('#turn2').css(myTurn ? inactiveStyle : activeStyle);
+}
+
 function parseQuery() {
     var params = {};
     var query = window.location.search.replace(/^\?/, '');
@@ -112,7 +184,7 @@ socket.on('chat message', function (msg) {
     }
 
     updateStatus(res);
-    refresh();
+    requestRefresh();
 });
 
 $('document').ready(function () {
@@ -120,13 +192,15 @@ $('document').ready(function () {
     roomId = params.val ? Number(params.val) : null;
     updateRoomInfo();
 
+    preloadPieceImages();
+
     $('#ready-btn').on('click', function () {
         socket.emit('player ready');
         $('#ready-btn').prop('disabled', true);
     });
 
     game.set_turn(turn);
-    refresh();
+    requestRefresh();
 });
 
 function player1(x) {
@@ -160,41 +234,59 @@ function button_yx(y, x) {
     socket.emit('game input', JSON.stringify(new POS(BOARD, actual_y, actual_x)));
 }
 
+function requestRefresh() {
+    if (renderScheduled) {
+        return;
+    }
+
+    renderScheduled = true;
+
+    raf(function () {
+        renderScheduled = false;
+        refresh();
+    });
+}
+
 function refresh() {
+    if (!ensureRenderNodes()) {
+        return;
+    }
+
     var p1 = game.get_having(PLAYER1);
     var p2 = game.get_having(PLAYER2);
     var bd = game.get_board();
 
-    var screen_bd = $('#btn > img');
-    var screen_p1 = $('#player1 > #sbtn > img');
-    var screen_p2 = $('#player2 > #sbtn > img');
+    var myPieces = (turn === PLAYER2) ? p2 : p1;
+    var oppPieces = (turn === PLAYER2) ? p1 : p2;
 
-    var my_pieces = (turn === PLAYER2) ? p2 : p1;
-    var opp_pieces = (turn === PLAYER2) ? p1 : p2;
     for (var i = 0; i < 6; i++) {
-        screen_p1[i].src = 'images/' + mal_str(my_pieces[i]) + '.png';
-        screen_p2[i].src = 'images/' + mal_str(opp_pieces[i]) + '.png';
+        setImageIfChanged(renderNodes.my[i], renderState.myPieces, i, mal_str(myPieces[i]));
+        setImageIfChanged(renderNodes.opp[i], renderState.oppPieces, i, mal_str(oppPieces[i]));
     }
 
-    if (turn === PLAYER2) {
-        $('#board').addClass('flipped');
-    } else {
-        $('#board').removeClass('flipped');
+    var shouldFlip = (turn === PLAYER2);
+    if (renderState.boardFlipped !== shouldFlip) {
+        renderState.boardFlipped = shouldFlip;
+        if (shouldFlip) {
+            $('#board').addClass('flipped');
+            $('#wrap').addClass('hands-flipped');
+        }
+        else {
+            $('#board').removeClass('flipped');
+            $('#wrap').removeClass('hands-flipped');
+        }
     }
 
     for (var y = 0; y < 4; y++) {
         for (var x = 0; x < 3; x++) {
-            var sy = (turn === PLAYER2) ? 3 - y : y;
-            var sx = (turn === PLAYER2) ? 2 - x : x;
-            screen_bd[y * 3 + x].src = 'images/' + mal_str(bd[sy][sx]) + '.png';
+            var sy = shouldFlip ? 3 - y : y;
+            var sx = shouldFlip ? 2 - x : x;
+            var idx = y * 3 + x;
+            setImageIfChanged(renderNodes.board[idx], renderState.board, idx, mal_str(bd[sy][sx]));
         }
     }
 
-    var myTurn = (game.turn === turn);
-    var activeStyle  = {'background': 'rgba(245,200,66,0.22)', 'color': '#f5c842'};
-    var inactiveStyle = {'background': 'rgba(0,0,0,0.18)', 'color': '#5e5a52'};
-    $('#turn1').css(myTurn ? activeStyle : inactiveStyle);
-    $('#turn2').css(myTurn ? inactiveStyle : activeStyle);
+    applyTurnStyles(game.turn === turn);
 }
 
 function mal_str(mal) {
