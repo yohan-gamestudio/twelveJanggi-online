@@ -162,14 +162,16 @@ socket.on('chat message', function (msg) {
     }
 
     if (msg === 'p1') {
-        alert($('#name1').text() + ' 플레이어가 이겼습니다.');
+        var p1WinnerName = (turn === PLAYER2) ? $('#name2').text() : $('#name1').text();
+        alert(p1WinnerName + ' 플레이어가 이겼습니다.');
         start = false;
         $('#ready-btn').prop('disabled', false);
         return;
     }
 
     if (msg === 'p2') {
-        alert($('#name2').text() + ' 플레이어가 이겼습니다.');
+        var p2WinnerName = (turn === PLAYER2) ? $('#name1').text() : $('#name2').text();
+        alert(p2WinnerName + ' 플레이어가 이겼습니다.');
         start = false;
         $('#ready-btn').prop('disabled', false);
         return;

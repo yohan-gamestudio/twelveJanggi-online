@@ -46,6 +46,27 @@ function resetRoomGame(r) {
     r.game = new GAME();
 }
 
+function swapRoomSides(r) {
+    var tempP = r.p1;
+    var tempName = r.p1_name;
+    var tempReady = r.p1_ready;
+
+    r.p1 = r.p2;
+    r.p1_name = r.p2_name;
+    r.p1_ready = r.p2_ready;
+
+    r.p2 = tempP;
+    r.p2_name = tempName;
+    r.p2_ready = tempReady;
+
+    if (player[r.p1]) {
+        player[r.p1][1] = 1;
+    }
+    if (player[r.p2]) {
+        player[r.p2][1] = 2;
+    }
+}
+
 function normalizeRoomSlots(r) {
     if (!r.p1 && r.p2) {
         r.p1 = r.p2;
@@ -240,20 +261,7 @@ io.on('connection', function (socket) {
             resetRoomGame(r);
 
             if (Math.floor(Math.random() * 2) % 2 == 0) {
-                var tempP = r.p1;
-                var tempName = r.p1_name;
-
-                r.p1 = r.p2;
-                r.p1_name = r.p2_name;
-                r.p2 = tempP;
-                r.p2_name = tempName;
-
-                if (player[r.p1]) {
-                    player[r.p1][1] = 1;
-                }
-                if (player[r.p2]) {
-                    player[r.p2][1] = 2;
-                }
+                swapRoomSides(r);
             }
         }
 
@@ -322,6 +330,7 @@ io.on('connection', function (socket) {
             io.to(r.p1).emit('chat message', 'p1');
             io.to(r.p2).emit('chat message', 'p1');
 
+            swapRoomSides(r);
             resetRoomGame(r);
             emitRoomState(r);
             broadcastRoomList();
@@ -330,6 +339,7 @@ io.on('connection', function (socket) {
             io.to(r.p1).emit('chat message', 'p2');
             io.to(r.p2).emit('chat message', 'p2');
 
+            swapRoomSides(r);
             resetRoomGame(r);
             emitRoomState(r);
             broadcastRoomList();
