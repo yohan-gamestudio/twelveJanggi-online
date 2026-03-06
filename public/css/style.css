@@ -158,15 +158,55 @@ html, body {
     height: 50px;
     font-size: 13px;
     font-weight: 700;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;
     background: rgba(0,0,0,0.25);
     color: var(--text-secondary);
     border-bottom: 1px solid var(--border-subtle);
     transition: background 0.30s, color 0.30s, text-shadow 0.30s;
+}
+
+#side > .turn .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 58px;
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0.08em;
+}
+
+#side > .turn .ready-badge.wait {
+    background: rgba(120, 120, 120, 0.18);
+    color: #a8a19a;
+    border: 1px solid rgba(168, 161, 154, 0.28);
+}
+
+#side > .turn .ready-badge.ready {
+    background: rgba(74, 222, 128, 0.15);
+    color: #4ade80;
+    border: 1px solid rgba(74, 222, 128, 0.35);
+}
+
+#side > .turn .turn-badge.inactive {
+    background: rgba(0,0,0,0.18);
+    color: #5e5a52;
+    border: 1px solid rgba(94, 90, 82, 0.35);
+}
+
+#side > .turn .turn-badge.active {
+    background: rgba(245,200,66,0.22);
+    color: #f5c842;
+    border: 1px solid rgba(245,200,66,0.45);
+    text-shadow: 0 0 10px rgba(245,200,66,0.35);
 }
 
 /* ── 타이머 (display:none 유지) ── */

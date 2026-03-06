@@ -65,17 +65,35 @@ function setImageIfChanged(imageNode, cache, index, nextImageName) {
     imageNode.src = toImagePath(nextImageName);
 }
 
+function setReadyBadge(selector, isReady) {
+    var badge = $(selector);
+    badge.text(isReady ? 'READY' : 'WAIT');
+    badge.removeClass('ready wait').addClass(isReady ? 'ready' : 'wait');
+}
+
 function applyTurnStyles(myTurn) {
-    if (renderState.myTurn === myTurn) {
+    var viewState = start ? (myTurn ? 'my' : 'opp') : 'wait';
+
+    if (renderState.myTurn === viewState) {
         return;
     }
 
-    renderState.myTurn = myTurn;
+    renderState.myTurn = viewState;
 
-    var activeStyle = {'background': 'rgba(245,200,66,0.22)', 'color': '#f5c842'};
-    var inactiveStyle = {'background': 'rgba(0,0,0,0.18)', 'color': '#5e5a52'};
-    $('#turn1').css(myTurn ? activeStyle : inactiveStyle);
-    $('#turn2').css(myTurn ? inactiveStyle : activeStyle);
+    if (viewState === 'wait') {
+        $('#turn1-badge').text('대기').removeClass('active').addClass('inactive');
+        $('#turn2-badge').text('대기').removeClass('active').addClass('inactive');
+        return;
+    }
+
+    if (viewState === 'my') {
+        $('#turn1-badge').text('내 턴').removeClass('inactive').addClass('active');
+        $('#turn2-badge').text('대기').removeClass('active').addClass('inactive');
+        return;
+    }
+
+    $('#turn1-badge').text('대기').removeClass('active').addClass('inactive');
+    $('#turn2-badge').text('상대 턴').removeClass('inactive').addClass('active');
 }
 
 function parseQuery() {
@@ -109,22 +127,31 @@ function updateRoomInfo() {
 function updateStatus(res) {
     if (!res.p1 || !res.p2) {
         $('#status-text').text('상대를 기다리는 중...');
-        $('#ready-btn').prop('disabled', true);
+        $('#ready-btn').text('레디').prop('disabled', true);
+        setReadyBadge('#ready1-badge', false);
+        setReadyBadge('#ready2-badge', false);
+        applyTurnStyles(false);
         return;
     }
+
+    var myReady = (turn === PLAYER1) ? !!res.p1_ready : !!res.p2_ready;
+    var oppReady = (turn === PLAYER1) ? !!res.p2_ready : !!res.p1_ready;
+    setReadyBadge('#ready1-badge', myReady);
+    setReadyBadge('#ready2-badge', oppReady);
 
     if (!res.started) {
-        var p1Ready = res.p1_ready ? '레디' : '대기';
-        var p2Ready = res.p2_ready ? '레디' : '대기';
-        $('#status-text').text('P1: ' + p1Ready + ' / P2: ' + p2Ready);
+        $('#status-text').text('양쪽 READY 시 시작');
 
-        var mineReady = (turn === PLAYER1 && res.p1_ready) || (turn === PLAYER2 && res.p2_ready);
-        $('#ready-btn').prop('disabled', mineReady);
+        $('#ready-btn').text(myReady ? '레디 완료' : '레디');
+        $('#ready-btn').prop('disabled', myReady);
+        applyTurnStyles(false);
         return;
     }
 
-    $('#status-text').text('게임 진행 중');
-    $('#ready-btn').prop('disabled', true);
+    var myTurn = (res.game && res.game.turn === turn);
+    $('#status-text').text(myTurn ? '내 턴입니다' : '상대 턴입니다');
+    $('#ready-btn').text('레디 완료').prop('disabled', true);
+    applyTurnStyles(myTurn);
 }
 
 socket.on('chat message', function (msg) {
@@ -286,7 +313,9 @@ function refresh() {
         }
     }
 
-    applyTurnStyles(game.turn === turn);
+    if (start) {
+        applyTurnStyles(game.turn === turn);
+    }
 }
 
 function mal_str(mal) {
