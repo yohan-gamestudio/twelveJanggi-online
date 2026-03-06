@@ -36,7 +36,8 @@ html, body {
         radial-gradient(ellipse 35% 35% at 5% 105%, rgba(74,222,128,0.04) 0%, transparent 55%),
         radial-gradient(ellipse 35% 35% at 95% 105%, rgba(248,113,113,0.04) 0%, transparent 55%);
     font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
-    padding: 16px 0 24px;
+    padding: 16px 0 calc(24px + env(safe-area-inset-bottom));
+    overflow-x: hidden;
 }
 
 /* ──────────────────────────────
@@ -93,6 +94,9 @@ html, body {
     color: var(--text-secondary);
     font-size: 12px;
     letter-spacing: 0.04em;
+    min-width: 0;
+    text-align: right;
+    word-break: keep-all;
 }
 
 /* ──────────────────────────────
@@ -330,4 +334,69 @@ button > img {
 #wrap.hands-flipped #player1 > #sbtn > img,
 #wrap.hands-flipped #player2 > #sbtn > img {
     transform: rotate(180deg);
+}
+
+@media (max-width: 430px) {
+    html, body {
+        padding: 8px 0 calc(14px + env(safe-area-inset-bottom));
+    }
+
+    .top-bar,
+    #wrap {
+        width: calc(100vw - 12px);
+        max-width: calc(100vw - 12px);
+    }
+
+    .top-bar {
+        margin-bottom: 8px;
+        padding: 8px 10px;
+        gap: 6px;
+    }
+
+    #room-info {
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        flex: 0 0 auto;
+    }
+
+    #status-text {
+        font-size: 11px;
+        letter-spacing: 0;
+        line-height: 1.2;
+    }
+
+    #contents > #board {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 3 / 4;
+    }
+
+    #side > .name,
+    #side > .turn {
+        height: 42px;
+    }
+
+    #side > .name {
+        font-size: 14px;
+    }
+
+    #side > .turn {
+        font-size: 11px;
+        gap: 5px;
+    }
+
+    #side > .turn .badge {
+        min-width: 48px;
+        height: 20px;
+        padding: 0 8px;
+        font-size: 10px;
+    }
+
+    #side > .having {
+        height: 58px;
+    }
+
+    #side > .having > #sbtn {
+        padding: 2px;
+    }
 }
