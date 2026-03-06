@@ -18,6 +18,7 @@ app.get('/game.html', function (req, res) {
 });
 
 const ROOM_COUNT = 3000;
+const RECONNECT_TIMEOUT_MS = 15000;
 
 var room = Array(ROOM_COUNT);
 var player = {};
@@ -35,7 +36,11 @@ function createRoom() {
         p1_ready: false,
         p2_ready: false,
         started: false,
-        game: new GAME()
+        game: new GAME(),
+        p1_reconnect_deadline: 0,
+        p2_reconnect_deadline: 0,
+        p1_reconnect_timer: null,
+        p2_reconnect_timer: null
     };
 }
 
@@ -44,6 +49,83 @@ function resetRoomGame(r) {
     r.p1_ready = false;
     r.p2_ready = false;
     r.game = new GAME();
+}
+
+function clearReconnectState(r, slot) {
+    var timerKey = (slot === 1) ? 'p1_reconnect_timer' : 'p2_reconnect_timer';
+    var deadlineKey = (slot === 1) ? 'p1_reconnect_deadline' : 'p2_reconnect_deadline';
+
+    if (r[timerKey]) {
+        clearTimeout(r[timerKey]);
+        r[timerKey] = null;
+    }
+
+    r[deadlineKey] = 0;
+}
+
+function hasActiveReconnectWindow(r) {
+    var now = Date.now();
+    return r.p1_reconnect_deadline > now || r.p2_reconnect_deadline > now;
+}
+
+function scheduleDisconnectCleanup(roomId, slot) {
+    var r = room[roomId];
+    if (!r) {
+        return;
+    }
+
+    var timerKey = (slot === 1) ? 'p1_reconnect_timer' : 'p2_reconnect_timer';
+    var deadlineKey = (slot === 1) ? 'p1_reconnect_deadline' : 'p2_reconnect_deadline';
+
+    clearReconnectState(r, slot);
+
+    var deadline = Date.now() + RECONNECT_TIMEOUT_MS;
+    r[deadlineKey] = deadline;
+    r[timerKey] = setTimeout(function () {
+        var latestRoom = room[roomId];
+        if (!latestRoom || latestRoom[deadlineKey] !== deadline) {
+            return;
+        }
+
+        clearReconnectState(latestRoom, slot);
+
+        if (slot === 1) {
+            latestRoom.p1 = null;
+            latestRoom.p1_name = null;
+            latestRoom.p1_ready = false;
+        }
+        else {
+            latestRoom.p2 = null;
+            latestRoom.p2_name = null;
+            latestRoom.p2_ready = false;
+        }
+
+        resetRoomGame(latestRoom);
+        normalizeRoomSlots(latestRoom);
+
+        emitRoomState(latestRoom);
+        broadcastRoomList();
+    }, RECONNECT_TIMEOUT_MS);
+}
+
+function tryReconnectPlayer(r, roomId, socketId, name) {
+    var now = Date.now();
+
+    if (r.p1_reconnect_deadline > now && r.p1_name === name) {
+        clearReconnectState(r, 1);
+        r.p1 = socketId;
+        player[socketId] = [roomId, 1];
+        return true;
+    }
+
+    if (r.p2_reconnect_deadline > now && r.p2_name === name) {
+        clearReconnectState(r, 2);
+        r.p2 = socketId;
+        player[socketId] = [roomId, 2];
+        return true;
+    }
+
+    return false;
 }
 
 function swapRoomSides(r) {
@@ -136,7 +218,7 @@ function getJoinableRoomList() {
         var r = room[i];
         var count = (r.p1 ? 1 : 0) + (r.p2 ? 1 : 0);
 
-        if (!r.started && count === 1) {
+        if (!r.started && count === 1 && !hasActiveReconnectWindow(r)) {
             list.push({
                 val: i,
                 p1_name: r.p1_name,
@@ -230,6 +312,12 @@ io.on('connection', function (socket) {
 
         var r = room[val];
 
+        if (tryReconnectPlayer(r, val, socket.id, name)) {
+            emitRoomState(r);
+            broadcastRoomList();
+            return;
+        }
+
         if (r.started || (r.p1 && r.p2)) {
             socket.emit('chat message', 'no');
             return;
@@ -241,12 +329,14 @@ io.on('connection', function (socket) {
             r.p1 = socket.id;
             r.p1_name = name;
             r.p1_ready = false;
+            clearReconnectState(r, 1);
             turn = 1;
         }
         else if (!r.p2) {
             r.p2 = socket.id;
             r.p2_name = name;
             r.p2_ready = false;
+            clearReconnectState(r, 2);
             turn = 2;
         }
 
@@ -354,6 +444,7 @@ io.on('connection', function (socket) {
         }
 
         var val = player[socket.id][0];
+        var turn = player[socket.id][1];
         var r = room[val];
 
         delete player[socket.id];
@@ -362,20 +453,21 @@ io.on('connection', function (socket) {
             return;
         }
 
-        if (r.p1 == socket.id) {
+        if (turn === 1 && r.p1 === socket.id) {
             r.p1 = null;
-            r.p1_name = null;
             r.p1_ready = false;
+            scheduleDisconnectCleanup(val, 1);
         }
-        else if (r.p2 == socket.id) {
+        else if (turn === 2 && r.p2 === socket.id) {
             r.p2 = null;
-            r.p2_name = null;
             r.p2_ready = false;
+            scheduleDisconnectCleanup(val, 2);
+        }
+        else {
+            return;
         }
 
         resetRoomGame(r);
-        normalizeRoomSlots(r);
-
         emitRoomState(r);
         broadcastRoomList();
     });

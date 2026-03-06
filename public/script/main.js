@@ -4,7 +4,39 @@ var start = false;
 var roomId = null;
 
 var socket = io();
-socket.emit('player in', window.location.href);
+var reconnectFallbackTimer = null;
+
+function goLobbyAfterDisconnect() {
+    if (reconnectFallbackTimer) {
+        clearTimeout(reconnectFallbackTimer);
+    }
+
+    reconnectFallbackTimer = setTimeout(function () {
+        alert('연결이 끊겼습니다. 로비로 이동합니다.');
+        window.location.href = '/';
+    }, 3000);
+}
+
+function clearDisconnectFallback() {
+    if (!reconnectFallbackTimer) {
+        return;
+    }
+
+    clearTimeout(reconnectFallbackTimer);
+    reconnectFallbackTimer = null;
+}
+
+socket.on('connect', function () {
+    clearDisconnectFallback();
+    socket.emit('player in', window.location.href);
+});
+
+socket.on('disconnect', function () {
+    start = false;
+    $('#status-text').text('연결이 끊겼습니다. 로비로 이동합니다...');
+    $('#ready-btn').prop('disabled', true);
+    goLobbyAfterDisconnect();
+});
 
 var IMAGE_PATH_PREFIX = 'images/';
 var PRELOAD_IMAGE_NAMES = [
