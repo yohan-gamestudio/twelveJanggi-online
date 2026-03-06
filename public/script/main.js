@@ -5,6 +5,7 @@ var roomId = null;
 
 var socket = io();
 var reconnectFallbackTimer = null;
+var DISCONNECT_REDIRECT_MS = 60000;
 
 function goLobbyAfterDisconnect() {
     if (reconnectFallbackTimer) {
@@ -12,9 +13,9 @@ function goLobbyAfterDisconnect() {
     }
 
     reconnectFallbackTimer = setTimeout(function () {
-        alert('연결이 끊겼습니다. 로비로 이동합니다.');
+        alert('연결이 복구되지 않아 로비로 이동합니다.');
         window.location.href = '/';
-    }, 3000);
+    }, DISCONNECT_REDIRECT_MS);
 }
 
 function clearDisconnectFallback() {
@@ -33,8 +34,7 @@ socket.on('connect', function () {
 
 socket.on('disconnect', function () {
     start = false;
-    $('#status-text').text('연결이 끊겼습니다. 로비로 이동합니다...');
-    $('#ready-btn').prop('disabled', true);
+    $('#status-text').text('연결이 끊겼습니다. 60초 내 복구되지 않으면 로비로 이동합니다...');
     goLobbyAfterDisconnect();
 });
 
@@ -159,30 +159,23 @@ function updateRoomInfo() {
 function updateStatus(res) {
     if (!res.p1 || !res.p2) {
         $('#status-text').text('상대를 기다리는 중...');
-        $('#ready-btn').text('레디').prop('disabled', true);
         setReadyBadge('#ready1-badge', false);
         setReadyBadge('#ready2-badge', false);
         applyTurnStyles(false);
         return;
     }
 
-    var myReady = (turn === PLAYER1) ? !!res.p1_ready : !!res.p2_ready;
-    var oppReady = (turn === PLAYER1) ? !!res.p2_ready : !!res.p1_ready;
-    setReadyBadge('#ready1-badge', myReady);
-    setReadyBadge('#ready2-badge', oppReady);
+    setReadyBadge('#ready1-badge', true);
+    setReadyBadge('#ready2-badge', true);
 
     if (!res.started) {
-        $('#status-text').text('양쪽 READY 시 시작');
-
-        $('#ready-btn').text(myReady ? '레디 완료' : '레디');
-        $('#ready-btn').prop('disabled', myReady);
+        $('#status-text').text('게임 시작 준비 중...');
         applyTurnStyles(false);
         return;
     }
 
     var myTurn = (res.game && res.game.turn === turn);
     $('#status-text').text(myTurn ? '내 턴입니다' : '상대 턴입니다');
-    $('#ready-btn').text('레디 완료').prop('disabled', true);
     applyTurnStyles(myTurn);
 }
 
@@ -197,7 +190,6 @@ socket.on('chat message', function (msg) {
         var p1WinnerName = (turn === PLAYER2) ? $('#name2').text() : $('#name1').text();
         alert(p1WinnerName + ' 플레이어가 이겼습니다.');
         start = false;
-        $('#ready-btn').prop('disabled', false);
         return;
     }
 
@@ -205,7 +197,6 @@ socket.on('chat message', function (msg) {
         var p2WinnerName = (turn === PLAYER2) ? $('#name1').text() : $('#name2').text();
         alert(p2WinnerName + ' 플레이어가 이겼습니다.');
         start = false;
-        $('#ready-btn').prop('disabled', false);
         return;
     }
 
@@ -254,11 +245,6 @@ $('document').ready(function () {
     updateRoomInfo();
 
     preloadPieceImages();
-
-    $('#ready-btn').on('click', function () {
-        socket.emit('player ready');
-        $('#ready-btn').prop('disabled', true);
-    });
 
     game.set_turn(turn);
     requestRefresh();

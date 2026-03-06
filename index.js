@@ -18,7 +18,7 @@ app.get('/game.html', function (req, res) {
 });
 
 const ROOM_COUNT = 3000;
-const RECONNECT_TIMEOUT_MS = 15000;
+const RECONNECT_TIMEOUT_MS = 60000;
 
 var room = Array(ROOM_COUNT);
 var player = {};
@@ -110,22 +110,32 @@ function scheduleDisconnectCleanup(roomId, slot) {
 
 function tryReconnectPlayer(r, roomId, socketId, name) {
     var now = Date.now();
+    var reconnected = false;
 
     if (r.p1_reconnect_deadline > now && r.p1_name === name) {
         clearReconnectState(r, 1);
         r.p1 = socketId;
         player[socketId] = [roomId, 1];
-        return true;
+        reconnected = true;
     }
-
-    if (r.p2_reconnect_deadline > now && r.p2_name === name) {
+    else if (r.p2_reconnect_deadline > now && r.p2_name === name) {
         clearReconnectState(r, 2);
         r.p2 = socketId;
         player[socketId] = [roomId, 2];
-        return true;
+        reconnected = true;
     }
 
-    return false;
+    if (!reconnected) {
+        return false;
+    }
+
+    if (r.p1 && r.p2) {
+        r.p1_ready = true;
+        r.p2_ready = true;
+        r.started = true;
+    }
+
+    return true;
 }
 
 function swapRoomSides(r) {
@@ -328,14 +338,14 @@ io.on('connection', function (socket) {
         if (!r.p1) {
             r.p1 = socket.id;
             r.p1_name = name;
-            r.p1_ready = false;
+            r.p1_ready = true;
             clearReconnectState(r, 1);
             turn = 1;
         }
         else if (!r.p2) {
             r.p2 = socket.id;
             r.p2_name = name;
-            r.p2_ready = false;
+            r.p2_ready = true;
             clearReconnectState(r, 2);
             turn = 2;
         }
@@ -353,40 +363,16 @@ io.on('connection', function (socket) {
             if (Math.floor(Math.random() * 2) % 2 == 0) {
                 swapRoomSides(r);
             }
-        }
 
-        emitRoomState(r);
-        broadcastRoomList();
-    });
-
-    socket.on('player ready', function () {
-        if (!player[socket.id]) {
-            return;
-        }
-
-        var val = player[socket.id][0];
-        var turn = player[socket.id][1];
-        var r = room[val];
-
-        if (!r || !r.p1 || !r.p2 || r.started) {
-            return;
-        }
-
-        if (turn == 1 && r.p1 == socket.id) {
             r.p1_ready = true;
-        }
-        else if (turn == 2 && r.p2 == socket.id) {
             r.p2_ready = true;
-        }
-
-        if (r.p1_ready && r.p2_ready) {
             r.started = true;
-            r.game = new GAME();
         }
 
         emitRoomState(r);
         broadcastRoomList();
     });
+
 
     socket.on('game input', function (msg) {
         var data = parseJSON(msg);
